@@ -294,3 +294,5 @@
     #     by the local ones
 
     path = ~/.gitconfig.local
+[gpg]
+	program = gpg

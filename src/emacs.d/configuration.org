@@ -1,0 +1,1411 @@
+My emacs configuration! Enjoy
+* Basic
+  #+BEGIN_SRC emacs-lisp
+
+(require 'pallet)
+(pallet-mode t)
+
+;; load use-package
+(eval-when-compile (require 'use-package))
+(require 'diminish)
+(require 'bind-key)
+
+
+  #+END_SRC
+* Setup
+
+** SLQ ORACLE
+   #+begin_src emacs-lisp
+(setq sql-oracle-login-params
+      '((user     :default "system")
+        (password :default (password-read "Password:" "oracle"))
+        (database :default "localhost:49161/xe")))
+   #+end_src
+
+** DEBUG
+   #+begin_src emacs-lisp
+(setq debug-on-error t)
+   #+end_src
+
+** HideShow Folding
+   #+begin_src emacs-lisp
+(use-package hideshow
+  :diminish hs-minor-mode
+  :config
+  (defun hs-hide-stuff ()
+    (hs-minor-mode 1)
+    (hs-hide-level 3))
+  (add-hook 'js2-mode-hook #'hs-hide-stuff )
+  (add-hook 'web-mode-hook 'hs-minor-mode )
+  (add-hook 'go-mode-hook #'hs-hide-stuff )
+  (add-hook 'java-mode-hook #'hs-hide-stuff )
+  (add-hook 'emacs-lisp-mode-hook #'hs-hide-stuff )
+  (add-hook 'lisp-mode-hook #'hs-hide-stuff )
+  (add-hook 'python-mode-hook #'hs-hide-stuff )
+  )
+   #+end_src
+
+** StrightPush
+   #+begin_src emacs-lisp
+(defun cesco/automatic-push ()
+  (interactive)
+  (magit-run-git "commit" "--all"
+         (format-time-string "--message=%F %R"))
+  (let ((current-branch (magit-get-current-branch)))
+    (message "PUSHING!!!!")
+    (magit-git-push current-branch
+                    (concat "origin/" current-branch)
+           nil )
+    ))
+   #+end_src
+
+** Insert SemiColon
+   #+begin_src emacs-lisp
+
+(defun cesco/insert-semicolon ()
+  (interactive)
+  (evil-append-line "1")
+  (insert ";")
+  (normal-mode)
+(pop-global-mark)
+  )
+   #+end_src
+
+** Set personal information
+   I am a gopher!
+   #+BEGIN_SRC emacs-lisp
+   (setq user-full-name "Francesco Antonello Ferraro"
+        user-mail-address "francescoaferraro@gmail.com "
+        calendar-latitude 42.2
+        calendar-longitude -71.1
+        calendar-location-name "Cambridge, MA")
+   #+END_SRC
+
+   #+RESULTS:
+   : Cambridge, MA
+
+** Kill other bufferso
+   #+BEGIN_SRC emacs-lisp
+     (defun cesco/kill-other-buffers ()
+       "Kill all other buffers."
+       (interactive)
+       (mapc 'kill-buffer (delq (current-buffer) (buffer-list))))
+   #+END_SRC
+** Osx
+   #+BEGIN_SRC emacs-lisp
+(setq mac-option-modifier 'meta)
+(setq mac-command-modifier 'control)
+(setq mac-control-modifier 'super)
+   #+END_SRC
+** REplace region when typing
+   #+BEGIN_SRC emacs-lisp
+(delete-selection-mode +1)
+   #+END_SRC
+** PDF
+
+   #+BEGIN_SRC emacs-lisp
+(setq doc-view-continuous t)
+   #+END_SRC
+
+** Hide Scroll Bar
+   #+begin_src emacs-lisp
+(scroll-bar-mode -1)
+   #+end_src
+** Errors
+
+   #+BEGIN_SRC emacs-lisp
+(setq help-at-pt-display-when-idle t)
+(setq help-at-pt-timer-delay 0.1)
+(help-at-pt-set-timer)
+   #+END_SRC
+
+** FontSize
+
+   #+BEGIN_SRC emacs-lisp
+
+(cond
+ ((string-equal system-type "gnu/linux")
+  (set-face-attribute 'default nil :height 145))
+ ((string-equal system-type "darwin")
+  (set-face-attribute 'default nil :height 150))
+ )
+
+   #+END_SRC
+
+** Shift+ Enter
+
+   #+BEGIN_SRC emacs-lisp
+     (defun cesco/insert-empty-line ()
+       (interactive)
+       (newline))
+     (global-set-key [(shift return)] 'cesco/insert-empty-line)
+   #+END_SRC
+** tabbar
+
+   #+BEGIN_SRC emacs-lisp
+(use-package tabbar
+  :after evil
+  :init
+  (setq tabbar-cycle-scope 'tabs)
+  (setq tabbar-background-color nil)
+  (setq tabbar-separator (quote (1.0)))
+  (setq tool-bar-mode nil)
+  :config
+  (setq tabbar-background-color "#393939")
+  (custom-set-faces
+   '(tabbar-default ((t (:inherit variable-pitch :height 1.4 :background "#393939" :foreground "black" :weight bold))))
+   '(tabbar-button ((t (:inherit tabbar-default :foreground "#f2f0ec"))))
+   '(tabbar-button-highlight ((t (:inherit tabbar-default))))
+   '(tabbar-highlight ((t (:underline t))))
+   '(tabbar-selected ((t (:inherit tabbar-default :background "#393939" :foreground "#ffcc66"))))
+   '(tabbar-separator ((t (:inherit tabbar-default :background "#393939"))))
+   '(tabbar-unselected ((t (:inherit tabbar-default)))))
+  (global-set-key (kbd "s-{") 'tabbar-backward-group)
+  (global-set-key (kbd "s-}") 'tabbar-forward-group)
+  (global-set-key (kbd "s-[") 'tabbar-backward)
+  (global-set-key (kbd "s-]") 'tabbar-forward)
+  (defun my-tabbar-buffer-groups-by-project ()
+    (list
+     (cond
+      ((memq major-mode '(mu4e-view-mode mu4e-main-mode mu4e-headers-mode mu4e-view-raw-mode
+					 twittering-mode weibo-timeline-mode
+					 jabber-roster-mode jabber-chat-mode erc-mode douban-music-mode
+					 ))
+       "Activity"
+       )
+      ((memq major-mode '(eshell-mode term-mode shell-mode))
+       (if (projectile-project-p) (projectile-project-name) "Common")
+       )
+      ((string-equal "*" (substring (buffer-name) 0 1))
+       "Emacs"
+       )
+      ((memq major-mode '(fundamental-mode))
+       "Emacs"
+       )
+      (t
+       (if (projectile-project-p) (projectile-project-name) "Common")
+       )
+      )))
+
+  (defun my-tabbar-buffer-groups-by-all ()
+    (list
+     (cond
+      ((string-equal "*" (substring (buffer-name) 0 1))
+       "Emacs"
+       )
+      (t "All"))))
+
+  (setq tabbar-buffer-groups-function 'my-tabbar-buffer-groups-by-project)
+  (tabbar-mode 1))
+   #+END_SRC
+** Indent
+   #+BEGIN_SRC emacs-lisp
+
+     (defun cesco/indent ()
+       (interactive)
+       (mark-whole-buffer)
+       (indent-region (point-min) (point-max) nil)
+       (pop-global-mark)
+       )
+
+   #+END_SRC
+
+** PATH
+
+   #+BEGIN_SRC emacs-lisp
+
+(when (memq window-system '(mac ns x))
+  (exec-path-from-shell-initialize))
+
+
+   #+END_SRC
+
+   #+RESULTS:
+   | bash | cannot set terminal process group (-1) | Inappropriate ioctl for devicebash | no job control in this shell[3;J[H[2J/home/cescoferraro/.nvm/versions/node/v6.10.2/bin | bash | cannot set terminal process group (-1) | Inappropriate ioctl for devicebash | no job control in this shell[3;J[H[2Jbash | cannot set terminal process group (-1) | Inappropriate ioctl for devicebash | no job control in this shell[3;J[H[2Jbash | cannot set terminal process group (-1) | Inappropriate ioctl for devicebash | no job control in this shell[3;J[H[2J/home/cescoferraro/.cargo/bin | /home/cescoferraro/bin | /usr/local/sbin | /usr/local/bin | /usr/sbin | /usr/bin | /sbin | /bin | /usr/games | /usr/local/games |
+
+** Silence dumb warning
+   #+BEGIN_SRC emacs-lisp
+(setq ad-redefinition-action 'accept)
+   #+END_SRC
+** Force Fullscreen
+   It forces emacs into full-screen-mode.
+   #+BEGIN_SRC emacs-lisp
+(add-hook 'window-setup-hook 'toggle-frame-fullscreen t)
+   #+END_SRC
+
+** Set Theme
+   #+BEGIN_SRC emacs-lisp
+     ;; (load-theme 'tsdh-dark)
+(use-package color-theme
+:ensure t)
+;(use-package spacemacs-theme
+;:ensure t
+;:init
+;(load-theme 'spacemacs-dark t))
+
+(use-package zenburn-theme
+:ensure t
+:init (load-theme 'zenburn t) )
+
+   #+END_SRC
+
+** Hide ToolBar
+
+   #+BEGIN_SRC emacs-lisp
+(tool-bar-mode -1)
+   #+END_SRC
+
+** DEletion Mode
+   #+BEGIN_SRC emacs-lisp
+   (delete-selection-mode 1)
+   #+END_SRC
+
+   #+RESULTS:
+   : t
+
+** SimpleClipo
+   #+BEGIN_SRC emacs-lisp
+     (use-package simpleclip :ensure t
+       :config
+
+       (defun copy-to-x-clipboard ()
+         (interactive)
+         (let ((thing (if (region-active-p)
+   		       (buffer-substring-no-properties (region-beginning) (region-end))
+   		     (thing-at-point 'symbol))))
+   	(simpleclip-set-contents thing)
+   	(message "thing => clipboard!")))
+
+       (defun paste-from-x-clipboard()
+         "Paste string clipboard"
+         (interactive)
+         (insert (simpleclip-get-contents)))
+
+       ;; Press `Alt-Y' to paste from clibpoard when in minibuffer
+       (defun my/paste-in-minibuffer ()
+         (local-set-key (kbd "M-y") 'paste-from-x-clipboard))
+       (add-hook 'minibuffer-setup-hook 'my/paste-in-minibuffer)
+       )
+   #+END_SRC
+** Autosave & backup files
+   #+BEGIN_SRC emacs-lisp
+
+(setq backup-directory-alist
+      `((".*" . ,temporary-file-directory)))
+(setq auto-save-file-name-transforms
+      `((".*" ,temporary-file-directory t)))
+
+   #+END_SRC
+** Y&N
+
+   #+BEGIN_SRC emacs-lisp
+     (defalias 'yes-or-no-p 'y-or-n-p)
+   #+END_SRC
+** Narrow & WIdening
+
+   #+BEGIN_SRC emacs-lisp
+(defun narrow-or-widen-dwim (p)
+  "If the buffer is narrowed, it widens. Otherwise, it narrows intelligently.
+Intelligently means: region, org-src-block, org-subtree, or defun,
+whichever applies first.
+Narrowing to org-src-block actually calls `org-edit-src-code'.
+
+With prefix P, don't widen, just narrow even if buffer is already
+narrowed."
+  (interactive "P")
+  (declare (interactive-only))
+  (cond ((and (buffer-narrowed-p) (not p)) (widen))
+        ((region-active-p)
+         (narrow-to-region (region-beginning) (region-end)))
+        ((derived-mode-p 'org-mode)
+         ;; `org-edit-src-code' is not a real narrowing command.
+         ;; Remove this first conditional if you don't want it.
+         (cond ((ignore-errors (org-edit-src-code))
+                (delete-other-windows))
+               ((org-at-block-p)
+                (org-narrow-to-block))
+               (t (org-narrow-to-subtree))))
+        (t (narrow-to-defun))))
+
+;; (define-key endless/toggle-map "n" #'narrow-or-widen-dwim)
+;; This line actually replaces Emacs' entire narrowing keymap, that's
+;; how much I like this command. Only copy it if that's what you want.
+(define-key ctl-x-map "n" #'narrow-or-widen-dwim)
+
+(eval-after-load 'org-src
+  '(define-key org-src-mode-map
+     "\C-x\C-s" #'org-edit-src-exit))
+
+   #+END_SRC
+** Prefer vertical window
+   #+BEGIN_SRC emacs-lisp
+(setq split-width-threshold 1 )
+   #+END_SRC
+* Org
+  #+BEGIN_SRC emacs-lisp
+(use-package org
+  :ensure t
+  :config
+
+  (require 'ox-latex)
+  (use-package org-bullets
+    :ensure t
+    :config
+
+
+    (add-hook 'org-mode-hook (lambda () (org-bullets-mode t)))
+    )
+
+  (use-package ox-reveal
+    :ensure ox-reveal)
+
+  (setq org-reveal-root "http://cdn.jsdelivr.net/reveal.js/3.0.0/")
+  (setq org-reveal-mathjax t)
+
+  (use-package htmlize
+    :ensure t)
+
+
+
+  (add-hook 'org-mode-hook #'visual-line-mode)
+  (diminish 'visual-line-mode)
+  (setq org-src-fontify-natively t)
+  ;; (setq org-support-shift-select t)
+  (setq org-src-preserve-indentation t)
+  (setq org-confirm-babel-evaluate nil)
+  (org-babel-do-load-languages
+   'org-babel-load-languages
+   '((emacs-lisp . t)
+     (python . t)
+     (go . t)
+     (java . t)
+     (lisp . t)))
+
+  )
+
+  #+END_SRC
+* Packages
+
+** Move-text
+   #+begin_src emacs-lisp
+(use-package move-text
+  :ensure t
+  :config (progn
+	    (global-set-key [(control shift j)] 'move-text-down)
+	    (global-set-key [(control shift k)] 'move-text-up)
+	    )
+  )
+   #+end_src
+
+** Nyan Mode
+   #+begin_src emacs-lisp
+(use-package nyan-mode :ensure t :config (nyan-mode))
+   #+end_src
+** Emojis
+   #+begin_src emacs-lisp
+(use-package emojify
+  :ensure t
+  :config (progn
+  (add-hook 'after-init-hook #'global-emojify-mode)))
+(use-package emoji-cheat-sheet-plus
+  :defer t
+  :init
+  (progn
+    (global-set-key (kbd "C-c M-e") 'emoji-cheat-sheet-plus-insert)))
+   #+end_src
+** Helm
+
+   #+BEGIN_SRC emacs-lisp
+     (use-package helm
+       :bind (
+   	   ("M-x" . helm-M-x)
+   	   ("C-x C-f" . helm-find-file)
+   	   ))
+(use-package helm-projectile
+  :ensure t
+  :config
+  (global-set-key (kbd "C-x C-p") 'helm-projectile))
+   #+END_SRC
+** CSS
+
+   #+BEGIN_SRC emacs-lisp
+(use-package css-mode
+  :mode (("\\.css\\'" . css-mode)
+         ("\\.pcss\\'" . css-mode))
+  :ensure t)
+
+   #+END_SRC
+
+** Rainbox
+   #+BEGIN_SRC emacs-lisp
+(use-package rainbow-delimiters
+	  :ensure t)
+(use-package rainbow-mode
+  :ensure t
+  :diminish rainbow-mode
+  :config
+  (add-hook 'prog-mode-hook 'rainbow-mode))
+   #+END_SRC
+
+** Openwith
+
+   #+BEGIN_SRC emacs-lisp
+(use-package openwith
+	  :ensure t
+	  :config
+	  (openwith-mode t)
+	  (setq openwith-associations '(("\\.pdf\\'" "evince" (file)))))
+   #+END_SRC
+
+** Iedit
+
+   #+BEGIN_SRC emacs-lisp
+(use-package iedit :ensure t)
+   #+END_SRC
+** Editorconfig
+   #+BEGIN_SRC emacs-lisp
+(use-package editorconfig
+   :diminish editorconfig-mode
+   :config
+  (editorconfig-mode 1))
+   #+END_SRC
+
+** Projectile
+   #+BEGIN_SRC emacs-lisp
+(use-package projectile
+	  :config
+  (setq projectile-completion-system 'helm)
+	  (projectile-global-mode))
+   #+END_SRC
+
+** Emmet
+   #+BEGIN_SRC emacs-lisp
+     (use-package emmet-mode
+       :ensure t
+       :diminish emmet-mode
+       :init
+       (add-hook 'html-mode-hook 'emmet-mode)
+       (add-hook 'web-mode-hook 'emmet-mode))
+   #+END_SRC
+** Linum
+
+   #+BEGIN_SRC emacs-lisp
+
+     (use-package linum-relative
+       :diminish linum-relative-mode
+       :ensure t
+       :config
+       (progn
+         (add-hook 'prog-mode-hook 'linum-mode)
+         (add-hook 'prog-mode-hook 'linum-relative-global-mode)
+         (setq linum-relative-current-symbol "")
+         )
+       )
+
+   #+END_SRC
+** Flycheck
+
+   #+BEGIN_SRC emacs-lisp
+
+(use-package flycheck
+  :diminish flycheck-mode
+  :bind (("M-n" . flycheck-next-error) ("M-p" . flycheck-previous-error))
+  :config
+  (global-flycheck-mode)
+  (flycheck-add-mode 'typescript-tslint 'web-mode)
+  (setq-default flycheck-disabled-checkers '(emacs-lisp-checkdoc))
+  (setq flycheck-display-errors-delay 0)
+  (setq flycheck-shellcheck-follow-sources nil)
+
+  (set-face-attribute 'flycheck-error nil :background "#8c5353")
+  (set-face-attribute 'flycheck-warning nil :background "#535399")
+  )
+   #+END_SRC
+** GIT
+
+   #+BEGIN_SRC emacs-lisp
+(use-package git-gutter-fringe
+  :diminish git-gutter-mode
+  :config
+  (global-git-gutter-mode t)
+  (set-face-foreground 'git-gutter-fr:modified "yellow")
+  (set-face-foreground 'git-gutter-fr:added    "blue")
+  (set-face-foreground 'git-gutter-fr:deleted  "white")
+  (setq git-gutter-fr:side 'left-fringe))
+
+
+(defun cesco/refresh ()
+  (interactive)
+  (kill-this-buffer)
+  (magit-list-repositories)
+  )
+
+(defun cesco/magit-repolist-delete (&optional _button)
+  "Show the status for the repository at point."
+  (interactive)
+  (--if-let (tabulated-list-get-id)
+      (if (yes-or-no-p "Remove Repo? ")
+	  (progn
+	    (delete-directory (expand-file-name it) t t)
+	    (cesco/refresh)
+	    )
+	)
+    (user-error "There is no repository at point")))
+
+(defun cesco/magit-repolist-hook ()
+  (local-set-key (kbd "C-M-g")  'magit-repolist-status)
+  (evil-define-key
+    (list 'normal 'insert 'visual 'motion)
+    magit-repolist-mode-map
+    (kbd "TAB") 'magit-repolist-status
+    (kbd "q") 'kill-this-buffer
+    (kbd "d") 'cesco/magit-repolist-delete
+    (kbd "r") 'cesco/refresh
+    (kbd "RET") 'magit-repolist-status)
+  (message "cesco/magit-repolist-hook")
+  )
+
+(use-package magit
+  :after evil-leader
+  :bind ("C-c r" . cesco/automatic-push)
+  :config
+  (setq magit-auto-revert-mode nil)
+  (setq magit-repository-directories
+	`(("~/go/src/github.com/cescoferraro" . 1)
+	  (,user-emacs-directory              . 1)))
+
+  (setq magit-repolist-columns
+	'(("Name"    25 magit-repolist-column-ident                  ())
+	  ("D"        1 magit-repolist-column-dirty                  ())
+	  ("Behind "    5  magit-repolist-column-unpulled-from-upstream ((:right-align t)))
+	  ("Ahead "    5  magit-repolist-column-unpushed-to-upstream   ((:right-align t)))
+	  ("Version" 25 magit-repolist-column-version                ())
+	  ))
+
+  ;; Evil Keybinding
+  (evil-leader/set-key "g" 'magit-status)
+  (add-hook 'magit-repolist-mode-hook 'cesco/magit-repolist-hook)
+  )
+
+(use-package magit-gitflow
+  :after (magit)
+  :config
+  (evil-define-key
+    'normal magit-mode-map (kbd ">") 'magit-gitflow-popup)
+  :init
+  (add-hook 'magit-mode-hook 'turn-on-magit-gitflow))
+
+(use-package evil-magit
+  :after magit
+  :ensure t )
+
+   #+END_SRC
+
+** Hl-line+
+   #+BEGIN_SRC emacs-lisp
+   #+END_SRC
+** Which-Keys
+   #+BEGIN_SRC emacs-lisp
+(use-package which-key :ensure t :diminish which-key-mode :config (which-key-mode))
+   #+END_SRC
+** Twitter
+
+   #+BEGIN_SRC emacs-lisp
+(use-package twittering-mode
+  :config
+  (setq twittering-use-master-password t)
+  (setq twittering-icon-mode t)
+  (setq twittering-timer-interval 300)
+  (setq twittering-url-show-status nil))
+   #+END_SRC
+
+** Neotree
+   #+BEGIN_SRC emacs-lisp
+(defun cesco/extension-icons ()
+  (add-to-list 'all-the-icons-icon-alist
+	       '("^dobi.yaml"
+		 all-the-icons-alltheicon "terminal"
+		 :height 1.0
+		 :face all-the-icons-pink))
+  (add-to-list 'all-the-icons-icon-alist
+	       '("\\.pcss"
+		 all-the-icons-alltheicon "css3"
+		 :height 1.0
+		 :face all-the-icons-red))
+  (add-to-list 'all-the-icons-icon-alist
+	       '("\\.tsx$"
+		 all-the-icons-alltheicon "react"
+		 :height 1.0
+		 :face all-the-icons-blue))
+  )
+
+(defun cesco/neotree-copy ()
+  (neotree-copy-filepath-to-yank-ring)
+  (message "Path copied to the kill ring!")
+  )
+
+(defun cesco/neotree-toogle ()
+  (interactive)
+  (if (string-equal " *NeoTree*" (buffer-name))
+      (progn
+	(delete-window)
+	(kill-buffer " *NeoTree*")
+	(message "have just deleted neotree window"))
+    (progn
+      (if (get-buffer " *NeoTree*")
+	  (progn
+	    (message "neotree buffer was opened")
+	    (kill-buffer " *NeoTree*"))
+	(progn
+	  (if (projectile-project-p)
+	      (neotree-projectile-action)
+	    (neotree-toggle))
+	  (message "have just popped neotree")))))
+  )
+
+(defun cesco/neotree-evil ()
+  (define-key evil-normal-state-local-map (kbd "q") 'neotree-hide)
+  (define-key evil-normal-state-local-map (kbd "I") 'neotree-hidden-file-toggle)
+  (define-key evil-normal-state-local-map (kbd "z") 'neotree-stretch-toggle)
+  (define-key evil-normal-state-local-map (kbd "1") 'neotree-change-root)
+  (define-key evil-normal-state-local-map (kbd "R") 'neotree-refresh)
+  (define-key evil-normal-state-local-map (kbd "m") 'neotree-rename-node)
+  (define-key evil-normal-state-local-map (kbd "n") 'neotree-create-node)
+  (define-key evil-normal-state-local-map (kbd "c") 'neotree-copy-node)
+  (define-key evil-normal-state-local-map (kbd "C") 'cesco/neotree-copy)
+  (define-key evil-normal-state-local-map (kbd "d") 'neotree-delete-node)
+  (define-key evil-normal-state-local-map (kbd "s") 'neotree-enter-vertical-split)
+  (define-key evil-normal-state-local-map (kbd "S") 'neotree-enter-horizontal-split)
+  (define-key evil-normal-state-local-map (kbd "RET") 'neotree-enter)
+  (define-key evil-normal-state-local-map (kbd "TAB") 'neotree-enter))
+
+(use-package find-file-in-project :ensure t)
+(use-package all-the-icons :ensure t :config (cesco/extension-icons))
+(use-package neotree
+  :after (evil evil-leader)
+  :ensure all-the-icons
+  :bind ([f2] . neotree-projectile-action)
+  :config (evil-leader/set-key "m" 'cesco/neotree-toogle)
+  :init (progn
+	  (setq neo-theme (if window-system 'icons 'nerd)) ; 'classic, 'nerd, 'ascii, 'arrow
+	  (setq neo-show-hidden-files t)
+	  (add-hook 'neotree-mode-hook 'cesco/neotree-evil)))
+   #+END_SRC
+
+   #+RESULTS:
+
+** Ivy
+   #+BEGIN_SRC emacs-lisp
+     (use-package counsel :ensure t)
+     (use-package swiper
+       :diminish ivy-mode
+       :ensure t
+       :config
+       (progn
+         (ivy-mode 1)
+         (setq ivy-use-virtual-buffers t)
+         (setq enable-recursive-minibuffers t)
+         (global-set-key "\C-s" 'swiper)
+         (global-set-key (kbd "C-c C-r") 'ivy-resume)
+         (global-set-key (kbd "<f6>") 'ivy-resume)
+         (global-set-key (kbd "<f1> f") 'counsel-describe-function)
+         (global-set-key (kbd "<f1> v") 'counsel-describe-variable)
+         (global-set-key (kbd "<f1> l") 'counsel-find-library)
+         ;; (global-set-key (kbd "<f2> i") 'counsel-info-lookup-symbol)
+         ;; (global-set-key (kbd "<f2> u") 'counsel-unicode-char)
+         (global-set-key (kbd "C-c k") 'counsel-ag)
+         (global-set-key (kbd "C-x l") 'counsel-locate)
+         (global-set-key (kbd "C-S-o") 'counsel-rhythmbox)
+         (define-key read-expression-map (kbd "C-r") 'counsel-expression-history)
+         )
+       )
+
+
+   #+END_SRC
+** Golden-ratio
+   #+BEGIN_SRC emacs-lisp
+     (use-package golden-ratio
+       :diminish golden-ratio-mode
+   	    :config
+   	    (golden-ratio-mode 1))
+   #+END_SRC
+** Beacon
+   #+BEGIN_SRC emacs-lisp
+(use-package beacon
+:diminish beacon-mode
+:ensure t
+:config
+(progn
+(beacon-mode 1)
+(setq beacon-push-mark 35)
+(setq beacon-color "#666600")))
+   #+END_SRC
+** Eldoc
+
+   #+begin_src emacs-lisp
+(use-package eldoc :ensure t :diminish eldoc-mode)
+   #+end_src
+
+
+** ModeLine
+   #+BEGIN_SRC emacs-lisp
+(use-package spaceline :ensure t
+  :config
+  (setq-default
+   powerline-height 24
+   powerline-default-separator 'arrow
+   spaceline-flycheck-bullet "❖ %s"
+   spaceline-separator-dir-left '(left . left)
+   spaceline-separator-dir-right '(right . right))
+  (set-face-attribute 'spaceline-evil-emacs nil :background "#be84ff"  )
+  (set-face-attribute 'spaceline-evil-insert nil :background "#5fd7ff" :foreground "black")
+  (set-face-attribute 'spaceline-evil-motion nil :background "#ae81ff ")
+  (set-face-attribute 'spaceline-evil-normal nil :background "#FF5722" :foreground "white")
+  (set-face-attribute 'spaceline-evil-replace nil :background "#f92672")
+  (set-face-attribute 'spaceline-evil-visual nil :background "#fd971f")
+  (set-face-attribute 'mode-line-buffer-id nil :foreground "#E1BEE7" :background "black")
+  (set-face-attribute 'mode-line-emphasis  nil :foreground "white" :background "#7B1FA2")
+  (setq-default mode-line-format '("%e" (:eval (spaceline-ml-main))))
+  (setq-default spaceline-highlight-face-func 'spaceline-highlight-face-evil-state)
+  )
+
+(use-package spaceline-config
+  :ensure spaceline
+  :config
+  (spaceline-install
+   'main
+   '(
+     (evil-state :face highlight-face :when t)
+     (projectile-root  :face mode-line-emphasis)
+     ((remote-host buffer-id version-control) :separator "  " :face mode-line-buffer-id )
+     mode-line-emphasis    (nyan-cat)
+     (process :when active))
+   '((selection-info :face region :when mark-active)
+     ((flycheck-error flycheck-warning flycheck-info) :when active)
+     (which-function)
+
+     (major-mode  :face mode-line-emphasis)
+     (global :when active)
+     ))
+  )
+
+
+
+   #+END_SRC
+** Yasnippet
+
+   #+BEGIN_SRC emacs-lisp
+   (use-package yasnippet
+   :diminish yas-minor-mode
+   :config
+	  (yas-global-mode 1))
+   #+END_SRC
+   #+begin_src emacs-lisp
+(use-package undo-tree
+	  :diminish undo-tree-mode
+	  :init (global-undo-tree-mode))
+   #+end_src
+** Company
+   #+BEGIN_SRC emacs-lisp
+(use-package company
+  :ensure t
+  :diminish company-mode
+  :config
+  (progn
+    (add-to-list 'company-backends '(company-elisp  :with company-yasnippet))
+    (define-key company-active-map (kbd "M-n") nil)
+    (define-key company-active-map (kbd "M-p") nil)
+    (define-key company-active-map (kbd "C-n") #'company-select-next)
+    (define-key company-active-map (kbd "C-p") #'company-select-previous)
+    (require 'company-emacs-eclim)
+    (company-emacs-eclim-setup)
+    (global-company-mode +1))
+  :init
+  (progn
+    (setq company-dabbrev-downcase 0)
+    (setq company-idle-delay 0)
+    (setq company-dabbrev-code-everywhere t)
+    (setq company-minimum-prefix-length 1)
+    (setq-default company-idle-delay 0)
+    (setq-default company-tooltip-align-annotations t)
+    )
+  )
+   #+END_SRC
+** Startup Screen
+   #+BEGIN_SRC emacs-lisp
+(setq inhibit-startup-screen t)
+(use-package dashboard
+  :config
+  (dashboard-setup-startup-hook))
+
+   #+END_SRC
+
+** SmartParens
+   #+BEGIN_SRC emacs-lisp
+
+     (use-package smartparens
+       :ensure smartparens
+       :diminish smartparens-mode
+       :config
+       (progn
+         (require 'smartparens-config)
+         (require 'smartparens-html)
+         (require 'smartparens-python)
+         (require 'smartparens-latex)
+         (smartparens-global-mode t)
+         (show-smartparens-global-mode t)
+         )
+
+       )
+
+   #+END_SRC
+
+** Engine Mode
+   #+BEGIN_SRC emacs-lisp
+;; engine
+;; Search engines integrated into Emacs.
+(use-package engine-mode
+  :commands (engine/search-github engine/search-google)
+  :config
+
+  (global-set-key (kbd "C-c g") 'engine/search-google)
+  (defengine github
+    "https://github.com/search?ref=simplesearch&q=%s"
+    :keybinding "h")
+  (defengine google
+    "http://www.google.com/search?ie=utf-8&oe=utf-8&q=%s"
+    :keybinding "g"))
+   #+END_SRC
+** Expand-Region
+   #+BEGIN_SRC emacs-lisp
+     (use-package expand-region
+       :after evil
+       :ensure t
+       :config
+       (eval-after-load "evil" '(setq expand-region-contract-fast-key "z"))
+       (evil-leader/set-key "xx" 'er/expand-region)
+       (global-set-key (kbd "C-a") 'er/expand-region)
+       (global-set-key (kbd "C-c a") 'er/expand-region)
+       )
+   #+END_SRC
+
+** Kubernetes Timonier
+   #+BEGIN_SRC emacs-lisp
+     (setq timonier-k8s-proxy "http://127.0.0.1:8001")
+   #+END_SRC
+
+* Languages
+** Golang
+*** Go path
+    #+BEGIN_SRC emacs-lisp
+(cond
+   ((string-equal system-type "gnu/linux")(setenv "GOPATH" "/home/cescoferraro/go"))
+   ((string-equal system-type "darwin")(setenv "GOPATH" "/Users/cesco/go")))
+(add-to-list 'exec-path (concat (getenv "GOPATH")  "/bin"))
+(add-to-list 'load-path (concat (getenv "GOPATH")  "/src/github.com/golang/lint/misc/emacs"))
+    #+END_SRC
+*** Go-mode
+    #+BEGIN_SRC emacs-lisp
+(use-package go-mode
+  :ensure t
+  :if (executable-find "go")
+  :bind (:map go-mode-map
+              ("M-." . godef-jump)
+              ("C-c C-a" . go-import-add)
+              ("C-c C-r" . go-remove-unused-imports)
+              ("C-c C-i" . go-goto-imports)
+              ("C-c C-c" . compile))
+  :after evil
+  :init
+    (setq gofmt-command "goimports")
+  :config
+
+  (evil-leader/set-key-for-mode 'go-mode "j" 'godef-jump)
+  (defun my-go-mode-hook ()
+    (setq tab-width 8)
+    (if (not (string-match "go" compile-command))
+	(set (make-local-variable 'compile-command) "go build -v && go test -v && go vet"))
+    (load-file "$GOPATH/src/github.com/dominikh/go-mode.el/go-guru.el")
+    )
+  (add-hook 'go-mode-hook 'go-eldoc-setup)
+  (add-hook 'go-mode-hook 'my-go-mode-hook)
+    (add-hook 'before-save-hook 'gofmt-before-save)
+  )
+    #+END_SRC
+
+*** GoLint
+    #+begin_src emacs-lisp
+  (use-package golint :ensure t)
+    #+end_src
+
+*** Go ElDoc
+    #+begin_src emacs-lisp
+(use-package go-eldoc
+  :after (go-mode hydra)
+  :config
+  (add-hook 'go-mode-hook 'go-eldoc-setup))
+    #+end_src
+
+*** Go-company
+
+    #+BEGIN_SRC emacs-lisp
+(use-package company-go
+  :ensure t
+  :config
+  (defun cesco/g-yas ()
+    (add-to-list (make-local-variable 'company-backends) '(company-go :with company-yasnippet)))
+  (add-hook 'go-mode-hook 'cesco/g-yas)
+  (setq company-go-show-annotation t)
+  (setq company-go-insert-arguments t))
+    #+END_SRC
+
+*** GoSnippets
+    #+begin_src emacs-lisp
+(use-package go-snippets
+  :after (go-mode hydra))
+    #+end_src
+
+*** GoDoctor
+    #+begin_src emacs-lisp
+(use-package godoctor
+  :after (go-mode hydra)
+  :if (executable-find "godoctor")
+  :bind (:map go-mode-map ("C-M-z" . hydra-godoctor/body))
+  :config
+  (defhydra hydra-godoctor (:hint nil :color blue :column 4)
+  "
+     ^Up^            ^Down^        ^Other^
+----------------------------------------------
+[_a_]   Next     [_d_] Unmark    [_f_] Unmark
+[_s_]   Skip
+^ ^
+"
+    ("a" godoctor-rename :exit t)
+    ("s" godoctor-extract )
+    ("d" godoctor-toggle )
+    ("f" godoctor-godoc )))
+
+    #+end_src
+
+*** GoGuru
+    #+begin_src emacs-lisp
+(use-package go-guru
+  :after (go-mode hydra)
+  :if (executable-find "guru")
+  :demand t
+  :init
+  (defun shackra/go-mode-set-scope ()
+    (when (eq major-mode 'go-mode)
+      (set (make-local-variable 'go-guru-scope)
+           (concat (projectile-project-root) "..."))))
+  :bind (:map go-mode-map
+              ("M-." . go-guru-definition)
+              ("C-M-g" . hydra-go-guru/body))
+  :config
+  (defhydra hydra-go-guru (:color blue :columns 2)
+    "Contesta preguntas sobre código fuente escrito en Go"
+    ("a" go-guru-callees "Receptores de llamada, función bajo punto actual")
+    ("s" go-guru-callers "Llamadores, función bajo punto actual")
+    ("d" go-guru-callstack "Muestra grafo de llamadas desde una raíz, función bajo punto actual")
+    ("f" go-guru-describe "Describe la sintaxis seleccionada, su tipo y métodos")
+    ("g" go-guru-freevars "Enumera las variables libres, marca actual")
+    ("h" go-guru-referrers "Enumera referencias al objeto, identificador marcado")
+    ("j" go-guru-peers "Enumera un set de remitentes/destinatarios para las operaciones enviar/recibir de este canal")
+    ("k" go-guru-pointsto "Muestra lo que apunta, expresión marcada")
+    ("l" go-guru-implements "Describe la relación de implementación para tipos en un paquete conteniendo el cursor")
+    ("ñ" go-guru-whicherrs "Muestra globales, constantes y tipos, expresión marcada (de tipo 'error')"))
+  (add-hook 'go-mode-hook #'go-guru-hl-identifier-mode)
+  (add-hook 'projectile-mode-hook #'shackra/go-mode-set-scope))
+    #+end_src
+
+** Java
+*** Gradle
+    skdbfjsdf
+    #+BEGIN_SRC emacs-lisp
+(use-package groovy-mode
+  :ensure t
+  :defer t
+  :mode (("\\.groovy$" . groovy-mode)
+         ("\\.gradle$" . groovy-mode))
+  :config (add-hook 'groovy-mode-hook 'turn-on-evil-mode))
+
+(use-package gradle-mode
+  :ensure gradle-mode
+  :diminish gradle-mode
+  :config
+  (progn
+    (defun build-and-run ()
+      (interactive)
+      (gradle-run "build run"))
+
+    (define-key gradle-mode-map (kbd "C-c C-r") 'build-and-run)
+    ))
+    #+END_SRC
+*** Eclim
+    #+BEGIN_SRC emacs-lisp
+(add-hook 'java-mode-hook (lambda ()
+                            (setq c-basic-offset 4
+                                  tab-width 4
+                                  indent-tabs-mode t)))
+(use-package eclim
+  :ensure t
+  :if (string-match-p (regexp-quote "cesco") user-login-name)
+  :config (progn
+	    ;; (setq eclimd-autostart t)
+
+	    (cond
+	     ((string-equal system-type "gnu/linux")
+	      ;; window size
+
+	      (setq eclim-executable "/opt/eclipse/eclim")
+	      )
+	     ((string-equal system-type "darwin")
+	      ;; window size
+	      (setq eclim-executable "~/eclipse/Eclipse.app/Contents/Eclipse/eclim")
+	      )
+	     )
+	    (define-key eclim-mode-map (kbd "C-c C-c") 'eclim-problems-correct)
+	    (global-eclim-mode)
+	    ))
+
+
+    #+END_SRC
+*** Meghanada
+
+
+    #+BEGIN_SRC emacs-lisp
+
+(use-package meghanada :ensure t
+:if (not (string-match-p (regexp-quote "cesco") user-login-name))
+  :after evil-leader
+  :config (progn
+
+     (evil-leader/set-key-for-mode 'java-mode "t"
+       (lambda ()
+         (interactive)
+         (meghanada-run-task "test")
+         (ace-window "")
+         (golden-ratio)
+         )
+       )
+     (evil-leader/set-key-for-mode 'java-mode "c"
+       (lambda ()
+         (interactive)
+         (meghanada-run-task "run")
+         (ace-window "")
+         (golden-ratio)
+         )
+       )
+
+
+     (add-hook 'java-mode-hook
+   	    (lambda ()
+   	      ;; meghanada-mode on
+   	      (meghanada-mode t)
+   	      (add-hook 'before-save-hook (lambda ()
+   					    (flycheck-display-error-at-point)
+   					    (meghanada-code-beautify-before-save)
+   					    ))))
+	    )
+
+  )
+    #+END_SRC
+
+** Javascript
+
+   #+BEGIN_SRC emacs-lisp
+(use-package js2-mode
+  :commands (js2-mode)
+  :config
+  (progn (evil-leader/set-key-for-mode 'js2-mode
+	   "j"  (lambda ()
+		  (interactive)
+		  (js2-jump-to-definition )
+		  )
+	   ) )
+  :mode (("\\.js\\'" . js2-mode)))
+   #+END_SRC
+** Typescript
+
+   #+BEGIN_SRC emacs-lisp
+(defun cesco/tide-checker ()
+
+  (flycheck-def-option-var flycheck-typescript-tsconfig
+      nil typescript-tslint-cesco
+    "The path of tsconfig.json ."
+    :type '(choice (const :tag "No custom tsconfig file" nil)
+
+
+		   (directory :tag "Custom tsconfig.json"))
+    :safe #'stringp
+    :package-version '(flycheck . "27"))
+
+  (flycheck-define-checker typescript-tslint-cesco
+    "TypeScript style checker using TSLint."
+    :command ("tslint" "--format" "json"
+	      (config-file "--config" flycheck-typescript-tslint-config)
+	      (config-file "--project" flycheck-typescript-tsconfig)
+	      (option "--rules-dir" flycheck-typescript-tslint-rulesdir)
+	      (eval flycheck-tslint-args)
+	      source-inplace)
+    :error-parser flycheck-parse-tslint
+    :modes (typescript-mode web-mode))
+  )
+
+(defun cesco/tslint ()
+  (setq flycheck-tslint-args . (nil))
+  (flycheck-select-checker 'typescript-tslint)
+  )
+
+(defun cesco/custom-tslint ()
+  (if (projectile-project-p)
+      (if (file-exists-p (concat ( projectile-project-root ) "tsconfig.json"))
+	  (progn
+	    (setq flycheck-tslint-args . ("--type-check"))
+	    (setq flycheck-typescript-tsconfig . ( (concat projectile-project-root "tsconfig.json" )))
+	    (flycheck-select-checker 'typescript-tslint-cesco))
+        (cesco/tslint)
+	)))
+
+
+(defun cesco/tide-mode ()
+  (interactive)
+  (setq tide-tsserver-process-environment '("TSS_LOG=-level verbose -file /tmp/tss.log"))
+  (setq tide-tsserver-executable "node_modules/typescript/bin/tsserver")
+  (tide-setup)
+  (cesco/custom-tslint)
+  (eldoc-mode +1)
+  (tide-hl-identifier-mode +1)
+  (add-hook 'before-save-hook 'tide-format-before-save)
+  (setq flycheck-check-syntax-automatically '(save mode-enabled))
+  (company-mode +1)
+;; (add-to-list 'company-backends '(company-tide :with company-yasnippet))
+  (set (make-local-variable 'company-backends)
+       '((company-tide company-files company-yasnippet))))
+
+(defun cesco/tide-evil ()
+  (evil-leader/set-key-for-mode 'web-mode
+    "j" (lambda () (interactive)(tide-jump-to-definition))
+    )
+  )
+
+
+(use-package tide
+  :diminish tide-mode
+  :after (flycheck evil-leader)
+  :config
+  (cesco/tide-evil)
+  (cesco/tide-checker)
+  (add-hook 'typescript-mode-hook #'cesco/tide-mode) )
+
+(use-package web-mode :ensure t
+  :ensure tide
+  :mode (("\\.tsx$" . web-mode)
+         ("\\.jsx$" . web-mode))
+  :config
+  (add-hook 'web-mode-hook
+	    (lambda ()
+	      (when (string-equal "tsx" (file-name-extension buffer-file-name))
+		(cesco/tide-mode))))
+
+  (add-hook 'web-mode-hook
+	    (lambda ()
+	      (when (string-equal "jsx" (file-name-extension buffer-file-name))
+		(cesco/tide-mode))))
+
+  )
+   #+END_SRC
+* Evil
+** Evil Paraphernalia
+   #+BEGIN_SRC emacs-lisp
+(use-package evil-nerd-commenter
+  :ensure t
+  :config (progn
+	    (evilnc-default-hotkeys)))
+
+(use-package
+  evil-smartparens
+  :diminish evil-smartparens-mode
+  :ensure t
+  :init (add-hook 'smartparens-enabled-hook #'evil-smartparens-mode))
+(use-package evil-org
+  :diminish evil-org-mode
+  :ensure t)
+(use-package evil-surround
+  :ensure t
+  :config
+  (global-evil-surround-mode))
+
+   #+END_SRC
+** Evil-Leader
+   #+BEGIN_SRC emacs-lisp
+
+(defun cesco/config-evil-leader ()
+  (evil-leader/set-leader ",")
+  (evil-leader/set-key
+    "/" 'evilnc-comment-or-uncomment-lines
+    "ci" 'evilnc-comment-or-uncomment-lines
+    "cl" 'evilnc-quick-comment-or-uncomment-to-the-line
+    "ll" 'evilnc-quick-comment-or-uncomment-to-the-line
+    "cc" 'evilnc-copy-and-comment-lines
+    "cp" 'evilnc-comment-or-uncomment-paragraphs
+    "cr" 'comment-or-uncomment-region
+    "cv" 'evilnc-toggle-invert-comment-line-by-line
+    "\\" 'evilnc-comment-operator
+    "z" 'zoom-window-zoom
+    "f" 'helm-projectile
+    "k" 'helm-buffers-list
+    "s" 'save-buffer
+    "q" 'kill-emacs
+    "w" 'delete-window
+    "e" 'kill-this-buffer
+    "," 'previous-buffer
+    ";" 'projectile-run-eshell
+    "E" 'org-export-dispatch
+    "i" 'cesco/indent
+    "TAB" 'org-cycle
+    "p" 'projectile-switch-project
+    (kbd ".") (lambda () (interactive)(golden-ratio)(ace-window ""))
+    (kbd "o") (lambda () (interactive) (find-file "~/.emacs.d/configuration.org")))
+  (global-evil-leader-mode)
+  )
+
+(use-package evil-leader
+  :ensure helm
+  :ensure neotree
+  :config (cesco/config-evil-leader))
+   #+END_SRC
+
+** Evil itself
+   #+BEGIN_SRC emacs-lisp
+(use-package evil
+  :after evil-leader
+  :ensure t
+  :config
+  (set-default 'evil-symbol-word-search t)
+  (define-key evil-normal-state-map "L" 'tabbar-forward-tab)
+  (define-key evil-normal-state-map "H" 'tabbar-backward-tab)
+
+(evil-define-key 'normal evil-org-mode-map
+  "H" 'tabbar-backward-tab
+  "L" 'tabbar-forward-tab)
+  (evil-mode)
+  )
+   #+END_SRC
+
+* Hydras
+
+** Hydra Itself!
+   #+begin_src emacs-lisp
+
+
+   (use-package hydra
+  :preface
+  (require 'hydra-examples)
+  (use-package windmove
+    :ensure nil)
+  (use-package winner
+    :ensure nil
+    :config
+    (winner-mode 1))
+  (use-package windresize)
+  (use-package ace-window
+    :bind ("M-o" . shackra/other-window)
+    :init
+    (custom-set-faces
+     '(aw-leading-char-face
+       ((t (:inherit ace-jump-face-foreground :height 3.0)))))
+    (defun --count-frames ()
+      "Retorna el numero de frames visibles"
+      (let* ((frames (if (daemonp) (butlast (visible-frame-list) 1) (visible-frame-list))))
+        (length frames)))
+    (defun shackra/other-window ()
+      "cambia la ventana en que el cursor esta"
+      (interactive)
+      (ace-window 0)
+      (when golden-ratio-mode
+        (golden-ratio)))
+    :config
+    (setf aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l)))
+  :config
+  (defhydra hydra-zoom (global-map "<f2>")
+    "Acercamiento"
+    ("f" text-scale-increase "in")
+    ("j" text-scale-decrease "out"))
+  (defhydra hydra-avy (:color blue :columns 2)
+    "avy jump"
+    ("z" avy-goto-line "Ir a la linea...")
+    ("x" avy-goto-word-1 "Ir a la palabra...")
+    ("c" avy-goto-char-in-line "Ir a la letra en la linea actual...")
+    ("v" avy-goto-char "Ir a la palabra (2)..."))
+  (bind-key "C-z" 'hydra-avy/body)
+  ;; Hydra nos permite hacer magia con la administración de ventanas dentro de
+  ;; un marco de Emacs. Varios paquetes estan especificados en el `:preface'
+  ;; del macro para hydra
+  (defhydra hydra-win (:columns 4 :color amaranth :pre (progn (golden-ratio-mode -1) (balance-windows)) :post (progn (golden-ratio-mode 1) (golden-ratio-adjust golden-ratio-adjust-factor)))
+    "Manejo de ventanas"
+    ("<up>" windmove-up "Cursor ↑")
+    ("<left>" windmove-left "Cursor ←")
+    ("<down>" windmove-down "Cursor ↓")
+    ("<right>" windmove-right "Cursor →")
+    ("C-<up>" hydra-move-splitter-up "Astilla ↑")
+    ("C-<left>" hydra-move-splitter-left "Astilla ←")
+    ("C-<down>" hydra-move-splitter-down "Astilla ↓")
+    ("C-<right>" hydra-move-splitter-right "Astilla →")
+    ("b" shackra/switch-buffer "Cambiar buffer")
+    ("f" shackra/find-file "Visitar/Crear archivo")
+    ("z" (lambda () (interactive) (ace-window 1) (add-hook 'ace-window-end-once-hook 'hydra-win/body)) "Mover cursor a otra ventana")
+    ("2" (lambda () (interactive) (split-window-right) (windmove-right)) "Dividir |")
+    ("3" (lambda () (interactive) (split-window-below) (windmove-down)) "Dividir -")
+    ("c" (lambda () (interactive) (ace-window 4) (add-hook 'ace-window-end-once-hook 'hydra-win/body)) "Intercambiar buffer de ventana")
+    ("s" save-buffer "Guardar buffer")
+    ("x" delete-window "Borrar ventana")
+    ("X" (lambda () (interactive) (ace-window 16) (add-hook 'ace-window-end-once-hook 'hydra-win/body)) "Borrar esta/otra ventana")
+    ("1" ace-maximize-window "Maximizar esta ventana")
+    ("," (progn (winner-undo) (setf this-command 'winner-undo)) "Deshacer ultimo cambio")
+    ("." winner-redo "Rehacer ultimo cambio")
+    ("SPC" nil "Salir"))
+  (bind-key "M-1" #'hydra-win/body))
+   #+end_src
+
+
+
+
+
+** Personal Hydra!
+   #+begin_src emacs-lisp
+(defhydra cesco/hydra ()
+  "cesco"
+  (";" cesco/insert-semicolon  "insert semicolon" :color blue)
+  ("g" magit-list-repositories "Magit-List-Repos" :color blue)
+  ("p" cesco/automatic-push "Automatic push" :color blue )
+  ("d" cesco/kill-other-buffers "kill all buffer" :color blue))
+(global-set-key[(shift control d)] 'cesco/hydra/body)
+
+   #+end_src
+
+
+
+** Multiple Cursor
+   #+begin_src emacs-lisp
+(defhydra multiple-cursors-hydra (:hint nil)
+  "
+     ^Up^            ^Down^        ^Other^
+----------------------------------------------
+[_p_]   Next    [_n_]   Next    [_l_] Edit lines
+[_P_]   Skip    [_N_]   Skip    [_a_] Mark all
+[_M-p_] Unmark  [_M-n_] Unmark  [_r_] Mark by regexp
+^ ^             ^ ^             [_q_] Quit
+"
+  ("l" mc/edit-lines :exit t)
+  ("a" mc/mark-all-like-this :exit t)
+  ("n" mc/mark-next-like-this)
+  ("N" mc/skip-to-next-like-this)
+  ("M-n" mc/unmark-next-like-this)
+  ("p" mc/mark-previous-like-this)
+  ("P" mc/skip-to-previous-like-this)
+  ("M-p" mc/unmark-previous-like-this)
+  ("r" mc/mark-all-in-region-regexp :exit t)
+  ("q" nil))
+(global-set-key[(shift control s)] 'multiple-cursors-hydra/body)
+   #+end_src

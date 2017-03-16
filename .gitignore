@@ -17,3 +17,21 @@ tags
 .idea
 
 src/vim/vim/plugins/vim-devicons/doc/tags
+src/emacs.d/.cask/
+src/emacs.d/meghanada/
+src/emacs.d/smex-items
+src/emacs.d/ac-comphist.dat
+*#
+*#*
+src/emacs.d/projectile-bookmarks.eld
+src/emacs.d/recentf
+src/emacs.d/.cache/
+src/emacs.d/spacemacs/
+
+src/emacs.d/configuration.el
+src/emacs.d/elpa
+src/emacs.d/emojis
+src/emacs.d/session.*
+src/emacs.d/configuration.org_archive
+src/emacs.d/url/
+src/emacs.d/configuration.org[*Org Src configuration.org[ emacs-lisp ]*]
